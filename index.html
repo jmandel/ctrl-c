@@ -38,6 +38,7 @@
 
     #launch-button {
       background-color: #2980b9;
+      display: none;
     }
 
     #launch-button:hover {
@@ -217,8 +218,9 @@
 </head>
 <body>
   <h1>Ctrl+C Health</h1>
-  <button id="launch-button">Launch App</button>
-  <div id="status">Click "Launch App" to begin authorization.</div>
+  <div id="status">Search for a healthcare organization</div>
+  <endpoint-picker></endpoint-picker>
+  <button id="launch-button">Connect to My Data</button>
   <div id="help-note">
     <strong>Help:</strong> Use this tool to fetch and manage your clinical documents. Click "Launch App" to authenticate, select the documents you wish to copy, and then click "Copy Selected Attachments" to copy their content to your clipboard for easy pasting into language models or other applications.
   </div>
@@ -239,10 +241,20 @@
   </div>
   <div id="patient-info" style="display: none;"></div>
 
+  <script src="endpoint-picker.js"></script>
+
+
   <script type="module">
     // Import SmartLaunch module
     import { SmartLaunch } from './smart.js';
     SmartLaunch.handleCallback();
+
+    const picker = document.querySelector('endpoint-picker');
+    picker.addEventListener('endpoint-selected', (e) => {
+      config.fhirBaseUrl = e.detail.endpoint;
+      showStatus('Click "Connect" to begin authorization.');
+      launchButton.style.display = 'block';
+    });
 
     // Configuration for SmartLaunch
     const config = {
