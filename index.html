@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ctrl+C Health</title>
+  <style>
+    /* Basic Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      color: #333;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+
+    button {
+      padding: 12px 24px;
+      margin: 10px 5px 10px 0; /* Adjusted margin for better spacing */
+      font-size: 16px;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      text-align: center;
+    }
+
+    #launch-button {
+      background-color: #2980b9;
+    }
+
+    #launch-button:hover {
+      background-color: #1c5980;
+    }
+
+    #copy-button {
+      background-color: #27ae60;
+    }
+
+    #copy-button:hover {
+      background-color: #1e8449;
+    }
+
+    .action-button {
+      background-color: #3498db; /* Default color for action buttons */
+    }
+
+    .action-button:hover {
+      background-color: #2980b9;
+    }
+
+    .deselect-button {
+      background-color: #e74c3c; /* Red color for deselect all */
+    }
+
+    .deselect-button:hover {
+      background-color: #c0392b;
+    }
+
+    #status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      background-color: #ecf0f1;
+      border-left: 5px solid #3498db;
+      min-height: 40px;
+    }
+
+    #help-note {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      background-color: #fdfefe;
+      border: 1px solid #dcdcdc;
+      color: #7f8c8d;
+    }
+
+    #documents-container {
+      margin-top: 30px;
+      display: none;
+    }
+
+    #search-container {
+      margin-bottom: 15px;
+      position: relative;
+      width: 100%;
+    }
+
+    #search-input {
+      width: 100%;
+      padding: 10px 40px 10px 15px; /* Adjusted padding for the clear button */
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    #clear-search {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      font-size: 18px;
+      color: #aaa;
+      cursor: pointer;
+      display: none; /* Hidden by default */
+    }
+
+    #clear-search:hover {
+      color: #555;
+    }
+
+    #documents-list {
+      list-style-type: none;
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 0;
+    }
+
+    .document-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      background-color: #fff;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .document-item:hover {
+      background-color: #f0f8ff;
+    }
+
+    .document-item input[type="checkbox"] {
+      margin-right: 15px;
+      transform: scale(1.5);
+      cursor: pointer;
+    }
+
+    .document-title {
+      flex: 1;
+      font-size: 16px;
+      color: #34495e;
+    }
+
+    .document-date,
+    .document-status {
+      font-size: 14px;
+      color: #7f8c8d;
+      margin-left: 10px;
+    }
+
+    /* Scrollbar Styling */
+    #documents-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #documents-list::-webkit-scrollbar-track {
+      background: #ecf0f1;
+      border-radius: 5px;
+    }
+
+    #documents-list::-webkit-scrollbar-thumb {
+      background-color: #bdc3c7;
+      border-radius: 5px;
+      border: 2px solid #ecf0f1;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 600px) {
+      .document-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .document-status {
+        margin-top: 5px;
+      }
+
+      button {
+        width: 100%;
+        text-align: center;
+      }
+    }
+
+    /* Patient Information Styling */
+    #patient-info {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      background-color: #fdfefe;
+      border: 1px solid #dcdcdc;
+    }
+
+    #patient-info h2 {
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+
+    #patient-info p {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ctrl+C Health</h1>
+  <button id="launch-button">Launch App</button>
+  <div id="status">Click "Launch App" to begin authorization.</div>
+  <div id="help-note">
+    <strong>Help:</strong> Use this tool to fetch and manage your clinical documents. Click "Launch App" to authenticate, select the documents you wish to copy, and then click "Copy Selected Attachments" to copy their content to your clipboard for easy pasting into language models or other applications.
+  </div>
+  <div id="documents-container">
+    <h2>Available Documents</h2>
+    <!-- Search Box -->
+    <div id="search-container">
+      <input type="text" id="search-input" placeholder="Search by keywords (e.g., 'word', 'card')">
+      <button id="clear-search">&times;</button>
+    </div>
+    <!-- Select All / Select None Buttons -->
+    <div style="margin-bottom: 10px;">
+      <button class="action-button" id="select-all-button">Select All</button>
+      <button class="deselect-button" id="select-none-button">Select None</button>
+    </div>
+    <ul id="documents-list"></ul>
+    <button id="copy-button">Copy Selected Attachments</button>
+  </div>
+  <div id="patient-info" style="display: none;"></div>
+
+  <script type="module">
+    // Import SmartLaunch module
+    import { SmartLaunch } from './smart.js';
+    SmartLaunch.handleCallback();
+
+    // Configuration for SmartLaunch
+    const config = {
+      scope: 'launch/patient patient/*.rs',
+      pkce: 'conditional',
+      //clientId: '793544ee-7b27-421a-97c9-be77fd1677ff',
+      //fhirBaseUrl: 'https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4',
+      clientId: '8d9c9c70-dff2-47bb-8edd-5680ae41a15f',
+      fhirBaseUrl: 'https://epicfhir.unitypoint.org/ProdFHIR/api/FHIR/R4/',
+    };
+
+    // Initialize SmartLaunch
+    const smartLaunch = SmartLaunch.initialize(config);
+
+    // Application State
+    const state = {
+      documents: [],                 // All fetched DocumentReferences
+      filteredDocuments: [],         // Documents after applying search filter
+      selectedDocumentIds: new Set(),// Set of selected document IDs
+      searchQuery: ''                // Current search query
+    };
+
+    // DOM Elements
+    const launchButton = document.getElementById('launch-button');
+    const statusDiv = document.getElementById('status');
+    const helpNoteDiv = document.getElementById('help-note');
+    const documentsContainer = document.getElementById('documents-container');
+    const documentsList = document.getElementById('documents-list');
+    const copyButton = document.getElementById('copy-button');
+    const patientInfoDiv = document.getElementById('patient-info');
+    const searchInput = document.getElementById('search-input');
+    const clearSearchButton = document.getElementById('clear-search');
+    const selectAllButton = document.getElementById('select-all-button');
+    const selectNoneButton = document.getElementById('select-none-button');
+
+    /**
+     * Utility Functions
+     */
+
+    // Safely escape text to prevent XSS
+    const sanitizeText = (text = '') => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    };
+
+    // Format patient name
+    const formatPatientName = (names = []) => {
+      if (names.length === 0) return 'N/A';
+      return names.map(name => {
+        const given = name.given ? name.given.join(' ') : '';
+        const family = name.family || '';
+        return `${sanitizeText(given)} ${sanitizeText(family)}`.trim();
+      }).join(', ');
+    };
+
+    // Update the status message
+    const showStatus = (message) => {
+      statusDiv.textContent = message;
+    };
+
+    /**
+     * Rendering Functions
+     */
+
+    // Render Patient Information
+    const renderPatientInfo = (patient) => {
+      patientInfoDiv.innerHTML = `
+        <h2>Patient Information</h2>
+        <p><strong>ID:</strong> ${sanitizeText(patient.id)}</p>
+        <p><strong>Name:</strong> ${formatPatientName(patient.name)}</p>
+        <p><strong>Birth Date:</strong> ${sanitizeText(patient.birthDate)}</p>
+      `;
+      patientInfoDiv.style.display = 'block';
+    };
+
+    // Render Document List
+    const renderDocuments = () => {
+      // Clear existing list
+      documentsList.innerHTML = '';
+
+      // Generate document items
+      state.filteredDocuments.forEach(doc => {
+        const { id, type, status, date } = doc;
+        const title = type?.text || `Document ${id}`;
+        const formattedDate = date ? new Date(date).toLocaleDateString() : 'N/A';
+
+        // Create list item
+        const li = document.createElement('li');
+        li.className = 'document-item';
+
+        // Checkbox
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `doc-${id}`;
+        checkbox.dataset.docId = id;
+        checkbox.checked = state.selectedDocumentIds.has(id);
+        checkbox.addEventListener('change', handleCheckboxChange);
+
+        // Label for title
+        const label = document.createElement('label');
+        label.htmlFor = `doc-${id}`;
+        label.className = 'document-title';
+        label.textContent = title;
+
+        // Date Span
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'document-date';
+        dateSpan.textContent = `Date: ${sanitizeText(formattedDate)}`;
+
+        // Status Span
+        const statusSpan = document.createElement('span');
+        statusSpan.className = 'document-status';
+        statusSpan.textContent = `Status: ${sanitizeText(status)}`;
+
+        // Assemble list item
+        li.appendChild(checkbox);
+        li.appendChild(label);
+        li.appendChild(dateSpan);
+        li.appendChild(statusSpan);
+
+        // Append to documents list
+        documentsList.appendChild(li);
+      });
+    };
+
+    /**
+     * Event Handlers
+     */
+
+    // Handle checkbox state changes
+    const handleCheckboxChange = (event) => {
+      const docId = event.target.dataset.docId;
+      if (event.target.checked) {
+        state.selectedDocumentIds.add(docId);
+      } else {
+        state.selectedDocumentIds.delete(docId);
+      }
+    };
+
+    // Handle search input
+    const handleSearchInput = (event) => {
+      const query = event.target.value.trim().toLowerCase();
+      state.searchQuery = query;
+
+      // Toggle clear button visibility
+      clearSearchButton.style.display = query.length > 0 ? 'block' : 'none';
+
+      // Split query into probe words
+      const probeWords = query.split(/\s+/).filter(word => word.length > 0);
+
+      // Filter documents based on probe words
+      if (probeWords.length === 0) {
+        state.filteredDocuments = [...state.documents];
+      } else {
+        state.filteredDocuments = state.documents.filter(doc => {
+          const attachmentText = doc.processedAttachment?.toLowerCase() || '';
+          return probeWords.every(word => attachmentText.includes(word));
+        });
+      }
+
+      // Render the filtered documents
+      renderDocuments();
+    };
+
+    // Handle clear search
+    const handleClearSearch = () => {
+      searchInput.value = '';
+      state.searchQuery = '';
+      clearSearchButton.style.display = 'none';
+      state.filteredDocuments = [...state.documents];
+      renderDocuments();
+    };
+
+    // Handle copy action
+    const handleCopy = async () => {
+      // Select only visible and checked documents
+      const checkedBoxes = documentsList.querySelectorAll('input[type="checkbox"]:checked');
+      if (checkedBoxes.length === 0) {
+        showStatus('Please select at least one visible document to copy.');
+        return;
+      }
+
+      showStatus('Processing selected attachments...');
+      let combinedText = '';
+
+      for (const checkbox of checkedBoxes) {
+        const docId = checkbox.dataset.docId;
+        const doc = state.documents.find(d => d.id === docId);
+        if (doc) {
+          const { type, date, status, processedAttachment } = doc;
+          const title = type?.text || 'Document';
+          const formattedDate = date ? new Date(date).toLocaleDateString() : 'N/A';
+
+          // Sanitize and format attachment content
+          const attachmentContent = processedAttachment || '[Attachment unavailable]';
+
+          combinedText += `---\n**${sanitizeText(title)}**\nDate: ${sanitizeText(formattedDate)}\nStatus: ${sanitizeText(status)}\n${attachmentContent}\n\n`;
+        }
+      }
+
+      // Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(combinedText);
+        showStatus('Selected visible attachments copied to clipboard.');
+      } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+        showStatus('Failed to copy to clipboard.');
+      }
+    };
+
+    // Handle Select All
+    const handleSelectAll = () => {
+      state.filteredDocuments.forEach(doc => {
+        state.selectedDocumentIds.add(doc.id);
+      });
+      renderDocuments();
+    };
+
+    // Handle Select None
+    const handleSelectNone = () => {
+      state.filteredDocuments.forEach(doc => {
+        state.selectedDocumentIds.delete(doc.id);
+      });
+      renderDocuments();
+    };
+
+    /**
+     * Data Fetching Functions
+     */
+
+    // Fetch all pages of DocumentReferences
+    const fetchAllPages = async (url, accumulatedBundle = null) => {
+      if (!accumulatedBundle) {
+        accumulatedBundle = {
+          resourceType: "Bundle",
+          type: "searchset",
+          total: 0,
+          link: [{ relation: "self", url }],
+          entry: []
+        };
+      }
+
+      const response = await smartLaunch.fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.statusText}`);
+      }
+
+      const bundle = await response.json();
+
+      // Accumulate entries and total
+      accumulatedBundle.total += bundle.total || 0;
+      if (bundle.entry && bundle.entry.length > 0) {
+        accumulatedBundle.entry.push(...bundle.entry);
+      }
+
+      // Handle pagination
+      const nextLink = bundle.link?.find(link => link.relation === "next")?.url;
+      if (nextLink) {
+        return fetchAllPages(nextLink, accumulatedBundle);
+      } else {
+        return accumulatedBundle;
+      }
+    };
+
+    // Fetch and process all DocumentReferences
+    const fetchAllDocumentReferences = async () => {
+      showStatus('Fetching DocumentReferences...');
+      try {
+        const initialUrl = '/DocumentReference?patient={{patient}}&category=http://hl7.org/fhir/us/core/CodeSystem/us-core-documentreference-category|clinical-note';
+        const completeBundle = await fetchAllPages(initialUrl);
+
+        if (completeBundle.entry.length > 0) {
+          // Extract DocumentReferences
+          state.documents = completeBundle.entry
+            .map(entry => entry.resource)
+            .filter(r => r.resourceType === "DocumentReference");
+
+          // Fetch and process attachments
+          await prefetchAndProcessAttachments(state.documents);
+
+          // Initialize filteredDocuments
+          state.filteredDocuments = [...state.documents];
+
+          // Render documents
+          renderDocuments();
+
+          showStatus(`DocumentReferences fetched and processed successfully. Total: ${completeBundle.total}`);
+        } else {
+          console.warn('No DocumentReferences found for the patient.');
+          showStatus('No DocumentReferences found for the patient.');
+        }
+      } catch (error) {
+        console.error('Error fetching DocumentReferences:', error);
+        showStatus('Error fetching DocumentReferences.');
+      }
+    };
+
+    // Fetch and process attachments for documents
+    const prefetchAndProcessAttachments = async (docs) => {
+      showStatus('Fetching and processing attachments...');
+      const attachmentPromises = docs.map(async (doc) => {
+        const attachment = doc.content?.[0]?.attachment;
+        if (!attachment) {
+          doc.processedAttachment = null;
+          return;
+        }
+
+        if (attachment.data) {
+          // Base64 encoded data
+          try {
+            const decodedData = atob(attachment.data);
+            doc.processedAttachment = decodedData;
+          } catch (error) {
+            console.error('Failed to decode base64 attachment data:', error);
+            doc.processedAttachment = null;
+          }
+        } else if (attachment.url) {
+          // Attachment via URL
+          try {
+            const response = await smartLaunch.fetch(attachment.url);
+            if (response.ok) {
+              const contentType = response.headers.get('Content-Type') || '';
+              if (contentType.includes('application/json')) {
+                const json = await response.json();
+                doc.processedAttachment = JSON.stringify(json, null, 2);
+              } else if (contentType.startsWith('text/')) {
+                let text = await response.text();
+
+                // Check if the text contains HTML/XML tags
+                if (/<[a-z][\s\S]*>/i.test(text)) {
+                  // Parse HTML/XML and extract plain text
+                  const parser = new DOMParser();
+                  const docParsed = parser.parseFromString(text, 'text/html');
+                  text = docParsed.body.textContent || '[Unable to extract text from attachment.]';
+                }
+
+                doc.processedAttachment = text;
+              } else {
+                doc.processedAttachment = `[Attachment content of type ${sanitizeText(contentType)} not supported for text extraction.]`;
+              }
+            } else {
+              console.error('Failed to fetch attachment from URL:', response.statusText);
+              doc.processedAttachment = null;
+            }
+          } catch (error) {
+            console.error('Error fetching attachment from URL:', error);
+            doc.processedAttachment = null;
+          }
+        } else {
+          doc.processedAttachment = null;
+        }
+      });
+
+      await Promise.all(attachmentPromises);
+      showStatus('All attachments have been fetched and processed.');
+    };
+
+    /**
+     * Event Subscriptions
+     */
+
+    // Handle authorization events
+    smartLaunch.events.on('launchInitiated', () => {
+      console.log('Authorization flow initiated.');
+      showStatus('Authorization flow initiated.');
+    });
+
+    smartLaunch.events.on('authorizationSucceeded', (event) => {
+      const tokenResponse = event.data;
+      console.log('Authorization successful!', tokenResponse);
+      showStatus('Authorization successful!');
+      documentsContainer.style.display = 'block';
+      fetchAndDisplayPatientInfo();
+      fetchAllDocumentReferences();
+
+      // Hide the launch button after successful authorization
+      launchButton.style.display = 'none';
+    });
+
+    smartLaunch.events.on('authorizationFailed', (event) => {
+      const error = event.data;
+      console.error('Authorization failed:', error);
+      showStatus(`Authorization failed: ${sanitizeText(error.message)}`);
+    });
+
+    smartLaunch.events.on('tokenRefreshed', (event) => {
+      const tokenResponse = event.data;
+      console.log('Access token refreshed:', tokenResponse);
+      showStatus('Access token refreshed.');
+    });
+
+    smartLaunch.events.on('tokenRefreshFailed', (event) => {
+      const error = event.data;
+      console.error('Token refresh failed:', error);
+      showStatus(`Token refresh failed: ${sanitizeText(error.message)}`);
+    });
+
+    /**
+     * Initialization
+     */
+
+    // Handle Launch Button Click
+    launchButton.addEventListener('click', async () => {
+      showStatus('Initiating authorization...');
+      try {
+        await smartLaunch.authorize();
+      } catch (error) {
+        console.error('Authorization failed:', error);
+        showStatus(`Authorization failed: ${sanitizeText(error.message)}`);
+      }
+    });
+
+    // Handle Search Input
+    searchInput.addEventListener('input', handleSearchInput);
+
+    // Handle Clear Search Button
+    clearSearchButton.addEventListener('click', handleClearSearch);
+
+    // Handle Copy Button Click
+    copyButton.addEventListener('click', handleCopy);
+
+    // Handle Select All Button Click
+    selectAllButton.addEventListener('click', handleSelectAll);
+
+    // Handle Select None Button Click
+    selectNoneButton.addEventListener('click', handleSelectNone);
+
+    /**
+     * Fetch and Display Patient Information
+     */
+
+    const fetchAndDisplayPatientInfo = async () => {
+      try {
+        const response = await smartLaunch.fetch('/Patient/{{patient}}');
+        if (response.ok) {
+          const patient = await response.json();
+          renderPatientInfo(patient);
+        } else {
+          console.warn('Failed to fetch patient information:', response.statusText);
+          patientInfoDiv.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error fetching patient information:', error);
+        patientInfoDiv.style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>
